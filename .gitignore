@@ -1,1 +1,3 @@
 .venv
+scripts/__pycache__/
+secrets/ors_secret.txt
