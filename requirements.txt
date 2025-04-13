@@ -9,3 +9,4 @@ ipykernel
 geopandas
 shapely
 scikit-learn
+pandas

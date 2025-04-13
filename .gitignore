@@ -1,7 +1,7 @@
 .venv
 scripts/__pycache__/
 secrets/ors_secret.txt
+data/*
 .env
 __pycache__/
 *log
-data/
