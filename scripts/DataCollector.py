@@ -1,7 +1,24 @@
 import requests
+from dotenv import load_dotenv
+import os
+from tqdm import tqdm
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("datacollector.log"),
+        logging.StreamHandler()
+    ]
+)
+
+load_dotenv()
 
 class DataCollector:
     def __init__(self):
+        logging.info("Initializing DataCollector class.")
         self.osm_mapping = {
             # AMENITY MAPPINGS
             'amenity': {
@@ -167,47 +184,52 @@ class DataCollector:
                 '*': 'Nature'
             }
         }
-        
+
     def _get_mapped_category(self, osm_type, osm_value, tags=None):
         """Helper method to get the mapped category based on OSM type and value"""
+        logging.debug(f"Getting mapped category for osm_type: {osm_type}, osm_value: {osm_value}, tags: {tags}")
         if osm_type not in self.osm_mapping:
+            logging.warning(f"OSM type '{osm_type}' not found in mappings.")
             return None
-            
+
         mapping = self.osm_mapping[osm_type]
-        
+
         # Handle wildcard mappings
         if '*' in mapping and osm_value not in mapping:
+            logging.debug(f"Using wildcard mapping for osm_type: {osm_type}, osm_value: {osm_value}")
             return mapping['*']
-            
+
         # Handle specific value mappings
         if osm_value in mapping:
+            logging.debug(f"Found specific mapping for osm_value: {osm_value}")
             return mapping[osm_value]
-            
+
         # For building types that need additional tag checks
-        if osm_type == 'building':
-            if tags:
-                # Check for Business center (office with specific material/height)
-                if osm_value == 'office':
-                    material = tags.get('building:material', '').lower()
-                    height = float(tags.get('height', 0))
-                    if material in ('glass', 'mirrored-glass') and height > 20:
-                        return 'Business center'
-                
-                # Check for Elite r.e. (hotel or levels >20, specific material/height)
-                if osm_value == 'hotel':
-                    levels = int(tags.get('levels', 0))
-                    material = tags.get('building:material', '').lower()
-                    height = float(tags.get('height', 0))
-                    if (levels > 20 or height > 60) and material in ('glass', 'mirrored-glass'):
-                        return 'Elite r.e.'
-                
-                # Similar checks for other building types...
-                
+        if osm_type == 'building' and tags:
+            logging.debug(f"Performing additional tag checks for building type: {osm_value}")
+            # Check for Business center (office with specific material/height)
+            if osm_value == 'office':
+                material = tags.get('building:material', '').lower()
+                height = float(tags.get('height', 0))
+                if material in ('glass', 'mirrored-glass') and height > 20:
+                    logging.info(f"Building classified as 'Business center' based on material and height.")
+                    return 'Business center'
+
+            # Check for Elite r.e. (hotel or levels >20, specific material/height)
+            if osm_value == 'hotel':
+                levels = int(tags.get('levels', 0))
+                material = tags.get('building:material', '').lower()
+                height = float(tags.get('height', 0))
+                if (levels > 20 or height > 60) and material in ('glass', 'mirrored-glass'):
+                    logging.info(f"Building classified as 'Elite r.e.' based on levels and material.")
+                    return 'Elite r.e.'
+
+        logging.warning(f"No mapping found for osm_type: {osm_type}, osm_value: {osm_value}")
         return None
 
     def info_nearby_op(self, latitude, longitude, radius):
-        """Use Overpass API to search for POIs within circle
-           https://wiki.openstreetmap.org/wiki/Overture_categories"""
+        """Use Overpass API to search for POIs within circle"""
+        logging.info(f"Querying Overpass API for POIs near ({latitude}, {longitude}) with radius {radius}.")
         overpass_url = "https://overpass-api.de/api/interpreter"
 
         overpass_query = f"""
@@ -238,11 +260,12 @@ class DataCollector:
         >;
         out skel qt;
         """
-        
+
         info_nearby = []
         try:
             response = requests.get(overpass_url, params={'data': overpass_query})
             if response.status_code == 200:
+                logging.info("Successfully received response from Overpass API.")
                 data = response.json()
                 for element in data['elements']:
                     if element['type'] == 'node':
@@ -250,10 +273,10 @@ class DataCollector:
                         name = tags.get('name', 'Unnamed')
                         lat = element.get('lat')
                         lon = element.get('lon')
-                        
+
                         mapped_categories = []
                         poi_type = None
-                        
+
                         # Check all possible OSM tag types
                         for osm_type in self.osm_mapping.keys():
                             if osm_type in tags:
@@ -265,7 +288,7 @@ class DataCollector:
                                     else:
                                         mapped_categories.append(mapped)
                                 poi_type = f"{osm_type}:{osm_value}"
-                        
+
                         if mapped_categories:
                             info_nearby.append({
                                 'name': name,
@@ -274,50 +297,57 @@ class DataCollector:
                                 'custom': list(set(mapped_categories))  # Remove duplicates
                             })
             else:
-                print(f"Error: {response.status_code}")
+                logging.error(f"Error: Received status code {response.status_code} from Overpass API.")
         except Exception as e:
-            print(f"Error during Overpass query: {e}")
-        
-        return info_nearby
-    
-    def info_nearby_ors(self, latitude, longitude, step_lat, step_long):
-        '''Use OpenRouteService to search for POI within rectangle. 
+            logging.exception(f"Error during Overpass query: {e}")
 
-            Less POIs available rather than OP'''
-        left_top_point = [latitude, longitude]  # Latitude, Longtitude (rightclick+copy from googlemaps)
-        left_top_point=left_top_point[::-1] #longtitude, latitude
-        right_bottom_point = [left_top_point[0] + step_long, left_top_point[1] + step_lat] #area of search
-        
-        body = {"request":"pois","geometry":{"bbox":[left_top_point,right_bottom_point],"geojson":{"type":"Point","coordinates":left_top_point},"buffer":200}}
+        return info_nearby
+
+    def info_nearby_ors(self, latitude, longitude, step_lat, step_long):
+        """Use OpenRouteService to search for POI within rectangle."""
+        logging.info(f"Querying OpenRouteService for POIs in rectangle starting at ({latitude}, {longitude}).")
+        left_top_point = [latitude, longitude][::-1]  # Longitude, Latitude
+        right_bottom_point = [left_top_point[0] + step_long, left_top_point[1] + step_lat]
+
+        body = {
+            "request": "pois",
+            "geometry": {
+                "bbox": [left_top_point, right_bottom_point],
+                "geojson": {"type": "Point", "coordinates": left_top_point},
+                "buffer": 200
+            }
+        }
         try:
-            key=open('./secrets/ors_secret.txt').readline()
-        except FileNotFoundError:
-            print("Need to have './secrets/ors_secret.txt'\n \
-                  Get key at https://account.heigit.org/signup")
+            key = os.environ['ors_sercret']
+        except KeyError:
+            logging.error("ORS secret key not found in environment variables.")
+            return []
 
         headers = {
             'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
             'Authorization': key,
             'Content-Type': 'application/json; charset=utf-8'
         }
-        call = requests.post('https://api.openrouteservice.org/pois', json=body, headers=headers)
-        print(call.status_code, call.reason)
-        call=call.json()
 
-        info_nearby=[]
-        for item in call['features']:
-            name=None
-            categories=None
-            item['geometry']['coordinates']
-            try:
-                name=item['properties']['osm_tags']['name']
-                coordinates=item['geometry']['coordinates']
-                categories=item['properties']['category_ids']
-                info_nearby.append({'name': name,
-                                'coordinates': coordinates,
-                                'categories': categories
-                                })
-            except KeyError:
-                pass
-        
-        return info_nearby
+        try:
+            response = requests.post('https://api.openrouteservice.org/pois', json=body, headers=headers)
+            logging.info(f"OpenRouteService response: {response.status_code} {response.reason}")
+            response_data = response.json()
+
+            info_nearby = []
+            for item in response_data.get('features', []):
+                
+                name = item['properties'].get('osm_tags',{}).get('name', 'Unnamed')
+                coordinates = item['geometry'].get('coordinates', None)
+                categories = item['properties'].get('category_ids', None)
+
+                info_nearby.append({
+                    'name': name,
+                    'coordinates': coordinates,
+                    'categories': categories
+                })
+
+            return info_nearby
+        except Exception as e:
+            logging.exception(f"Error during OpenRouteService query: {e}")
+            return []
