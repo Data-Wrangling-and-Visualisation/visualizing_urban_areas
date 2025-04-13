@@ -1,0 +1,23 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000" # Map port 8000 on the host to port 8000 in the container
+    volumes:
+      - ./api:/app # Sync the application code for development
+      - ./data:/app/data # Mount the data directory as a volume
+    stdin_open: true
+    tty: true
+  
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    ports:
+      - "80:80" # Map port 3000 on the host to port 80 in the container
+    volumes:
+      - ./front:/app # Optional: For development, sync local files with the container
+    stdin_open: true
+    tty: true

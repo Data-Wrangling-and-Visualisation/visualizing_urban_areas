@@ -10,3 +10,5 @@ geopandas
 shapely
 scikit-learn
 pandas
+fastapi
+uvicorn
