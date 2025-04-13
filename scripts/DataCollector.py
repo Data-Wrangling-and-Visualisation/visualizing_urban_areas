@@ -1,4 +1,5 @@
 import requests
+import pandas as pd
 
 class DataCollector:
     def __init__(self):
@@ -190,7 +191,7 @@ class DataCollector:
                 if osm_value == 'office':
                     material = tags.get('building:material', '').lower()
                     height = float(tags.get('height', 0))
-                    if material in ('glass', 'mirrored-glass') and height > 20:
+                    if material in ('glass', 'mirrored-glass') or height > 20:
                         return 'Business center'
                 
                 # Check for Elite r.e. (hotel or levels >20, specific material/height)
@@ -198,16 +199,34 @@ class DataCollector:
                     levels = int(tags.get('levels', 0))
                     material = tags.get('building:material', '').lower()
                     height = float(tags.get('height', 0))
-                    if (levels > 20 or height > 60) and material in ('glass', 'mirrored-glass'):
+                    if (levels > 20 or height > 60) or material in ('glass', 'mirrored-glass'):
                         return 'Elite r.e.'
                 
-                # Similar checks for other building types...
+                # Check for Upper class residential (tall residential buildings)
+                if osm_value == 'residential':
+                    levels = int(tags.get('levels', 0))
+                    height = float(tags.get('height', 0))
+                    if levels >= 10 or height >= 30:
+                        return 'Upper'
+                # Check for Middle class residential (medium height residential)
+                    if 5 <= levels < 10 or 15 <= height < 30:
+                        return 'Middle'
+                # Check for Lower class residential (small residential)
+                    if levels < 5 or height < 15:
+                        return 'Lower'
                 
+                # Check for Cottage settlement (detached houses with landuse tags)
+                if osm_value == 'house' and tags.get('detached', 'no') == 'yes':
+                    landuse = tags.get('landuse', '').lower()
+                    if landuse in ('residential', 'village', 'farmyard'):
+                        return 'Cottage settlement'
+
         return None
 
-    def info_nearby_op(self, latitude, longitude, radius):
+    def info_nearby_op(self, latitude, longitude, radius, city=None):
         """Use Overpass API to search for POIs within circle
-           https://wiki.openstreetmap.org/wiki/Overture_categories"""
+           https://wiki.openstreetmap.org/wiki/Overture_categories
+           @params: city - use to read cached city data"""
         overpass_url = "https://overpass-api.de/api/interpreter"
 
         overpass_query = f"""
@@ -239,6 +258,13 @@ class DataCollector:
         out skel qt;
         """
         
+        if city!=None:
+            try:
+                df=pd.read_csv(f'./data/{city}.csv')
+                print("Found city cached")
+                return df
+            except Exception:
+                print(f"City {city} not found in cached. Collecting data from API")
         info_nearby = []
         try:
             response = requests.get(overpass_url, params={'data': overpass_query})
@@ -250,6 +276,16 @@ class DataCollector:
                         name = tags.get('name', 'Unnamed')
                         lat = element.get('lat')
                         lon = element.get('lon')
+                        
+                        # Search for city name for later caching
+                        # Check for place=city, place=town, or place=* tags
+                        if city==None:
+                            place_type = tags.get('place')
+                            if place_type in ['city', 'town', 'village', 'hamlet']:
+                                city = tags.get('name')
+                            # Check for addr:city
+                            if 'addr:city' in tags and not city:
+                                city = tags['addr:city']
                         
                         mapped_categories = []
                         poi_type = None
@@ -268,17 +304,23 @@ class DataCollector:
                         
                         if mapped_categories:
                             info_nearby.append({
-                                'name': name,
-                                'coordinates': [lat, lon],
-                                'categories': poi_type,
-                                'custom': list(set(mapped_categories))  # Remove duplicates
+                                'Name': name,
+                                'Latitude': float(lat),
+                                'Longitude': float(lon),
+                                'Categories': poi_type, #osm category
+                                'Custom': list(set(mapped_categories))  # Remove duplicates
                             })
             else:
                 print(f"Error: {response.status_code}")
         except Exception as e:
             print(f"Error during Overpass query: {e}")
-        
-        return info_nearby
+
+        if city!=None:
+            print("City found in POI descriptions or passed by you. Saving city data for later usage")
+            pd.DataFrame(info_nearby).to_csv(f'./data/{city}.csv', index=False)
+        else:
+            print("City not found. Next time API will be called")
+        return pd.DataFrame(info_nearby)
     
     def info_nearby_ors(self, latitude, longitude, step_lat, step_long):
         '''Use OpenRouteService to search for POI within rectangle. 
