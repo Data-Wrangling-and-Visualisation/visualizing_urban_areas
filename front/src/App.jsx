@@ -26,98 +26,16 @@ L.Icon.Default.mergeOptions({
 // Sample data
 const citiesData = [
   {
-    name: "New York",
-    center: [40.7128, -74.006],
+    name: "Innopolis",
+    center: [55.7461773, 48.7506767],
     geojson: {
       type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: { type: "residential", name: "District A" },
-          geometry: {
-            type: "Polygon",
-            coordinates: [
-              [
-                [-74.01, 40.705],
-                [-74.0, 40.705],
-                [-74.0, 40.715],
-                [-74.01, 40.715],
-                [-74.01, 40.705]
-              ]
-            ]
-          }
-        },
-        {
-          type: "Feature",
-          properties: { type: "commercial", name: "District B" },
-          geometry: {
-            type: "Polygon",
-            coordinates: [
-              [
-                [-74.0, 40.705],
-                [-73.99, 40.705],
-                [-73.99, 40.715],
-                [-74.0, 40.715],
-                [-74.0, 40.705]
-              ]
-            ]
-          }
-        }
-      ]
-    },
-    markers: [
-      { id: 1, lat: 40.71, lng: -74.005, title: "AirBnB 1" },
-      { id: 2, lat: 40.708, lng: -74.008, title: "AirBnB 2" }
-    ]
-  },
-  {
-    name: "San Francisco",
-    center: [37.7749, -122.4194],
-    geojson: {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: { type: "residential", name: "District X" },
-          geometry: {
-            type: "Polygon",
-            coordinates: [
-              [
-                [-122.425, 37.775],
-                [-122.415, 37.775],
-                [-122.415, 37.785],
-                [-122.425, 37.785],
-                [-122.425, 37.775]
-              ]
-            ]
-          }
-        },
-        {
-          type: "Feature",
-          properties: { type: "mixed", name: "District Y" },
-          geometry: {
-            type: "Polygon",
-            coordinates: [
-              [
-                [-122.415, 37.775],
-                [-122.405, 37.775],
-                [-122.405, 37.785],
-                [-122.415, 37.785],
-                [-122.415, 37.775]
-              ]
-            ]
-          }
-        }
-      ]
-    },
-    markers: [
-      { id: 3, lat: 37.78, lng: -122.42, title: "AirBnB A" },
-      { id: 4, lat: 37.782, lng: -122.412, title: "AirBnB B" }
-    ]
+      features: [] // No predefined polygons for "Innopolis"
+    }
   }
 ];
 
-// 1) FlyToCity: triggers smooth animation whenever center changes
+// FlyToCity: Smooth animation when center changes
 function FlyToCity({ center }) {
   const map = useMap();
   useEffect(() => {
@@ -126,7 +44,7 @@ function FlyToCity({ center }) {
   return null;
 }
 
-// 2) Legend component
+// Legend component
 function Legend() {
   return (
     <div className="legend">
@@ -151,9 +69,28 @@ function Legend() {
   );
 }
 
-// 3) Main App
+// Main App
 export default function App() {
   const [selectedCity, setSelectedCity] = useState(citiesData[0]);
+  const [points, setPoints] = useState([]); // State to store points from the API
+
+  // Fetch points from the API
+  useEffect(() => {
+    async function fetchPoints() {
+      try {
+        const response = await fetch("http://localhost:8000/points"); // Replace with your API URL
+        const data = await response.json();
+        if (data.points) {
+          setPoints(data.points);
+        } else {
+          console.error("Error fetching points:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching points:", error);
+      }
+    }
+    fetchPoints();
+  }, []);
 
   // Style polygons
   const styleDistricts = (feature) => {
@@ -214,11 +151,28 @@ export default function App() {
 
           <GeoJSON data={selectedCity.geojson} style={styleDistricts} />
 
-          {selectedCity.markers.map((marker) => (
-            <Marker key={marker.id} position={[marker.lat, marker.lng]}>
-              <Popup>{marker.title}</Popup>
-            </Marker>
-          ))}
+          {/* Render markers for Innopolis */}
+          {selectedCity.name === "Innopolis" &&
+            points.map((point, index) => {
+              if (!point.Latitude || !point.Longitude) {
+                console.warn("Invalid point data:", point); // Debugging
+                return null;
+              }
+              return (
+                <Marker
+                  key={index}
+                  position={[point.Latitude, point.Longitude]}
+                >
+                  <Popup>
+                    <strong>{point.Name || "Unnamed"}</strong>
+                    <br />
+                    Categories: {point.Categories}
+                    <br />
+                    Custom: {Array.isArray(point.Custom) ? point.Custom.join(", ") : point.Custom}
+                  </Popup>
+                </Marker>
+              );
+            })}
         </MapContainer>
       </div>
     </div>
