@@ -1,5 +1,6 @@
 requests
 pandas
+fastparquet
 numpy
 matplotlib
 seaborn
@@ -12,3 +13,7 @@ scikit-learn
 pandas
 fastapi
 uvicorn
+scikit-learn
+pyyaml
+alphashape
+pyarrow

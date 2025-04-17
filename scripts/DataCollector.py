@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 from dotenv import load_dotenv
 import os
-from tqdm import tqdm
+from tqdm import tqdm #?
 import logging
 
 # Configure logging
@@ -18,8 +18,11 @@ logging.basicConfig(
 load_dotenv()
 
 class DataCollector:
+    """Collects data from REST API.
+        Do not work with this class directly. We have ElasticSearch db docker"""
     def __init__(self):
         logging.info("Initializing DataCollector class.")
+        # TODO: yaml file
         self.osm_mapping = {
             # AMENITY MAPPINGS
             'amenity': {
@@ -51,21 +54,20 @@ class DataCollector:
                 'religious': 'Ethnic', 'cathedral': 'Ethnic',
                 'church': 'Ethnic', 'monastery': 'Ethnic',
                 # Tourist
-                'museum': 'Tourist', 'public': 'Tourist',
+                'museum': 'Tourist', #'public': 'Tourist',
                 'stadium': 'Tourist', 'grandstand': 'Tourist',
                 'ship': 'Tourist', 'tower': 'Tourist',
                 # Business center (handled in info_nearby_op)
-                'office': 'Business center',
+                'office': 'Business center', 'commercial': 'Business center',
                 # Elite r.e. (handled in info_nearby_op)
                 'hotel': 'Elite r.e.',
                 # Upper r.e. (handled in info_nearby_op)
-                'apartments': 'Upper r.e.', 'commercial': 'Upper r.e.',
-                'government': 'Upper r.e.',
+                'apartments': 'Upper r.e.','government': 'Upper r.e.',
                 # Middle r.e. (handled in info_nearby_op)
                 'residential': 'Middle r.e.', 'retail': 'Middle r.e.',
                 'supermarket': 'Middle r.e.', 'civic': 'Middle r.e.',
-                'parking': 'Middle r.e.', 'garages': 'Middle r.e.',
                 # Lower r.e. (handled in info_nearby_op)
+                'parking': 'Lower r.e.', 'garages': 'Lower r.e.',
                 'static_caravan': 'Lower r.e.', 'warehouse': 'Lower r.e.',
                 'ruins': 'Lower r.e.',
                 # cottage settlement
@@ -126,12 +128,12 @@ class DataCollector:
             },
             
             # MAN_MADE MAPPINGS
-            'man_made': {
-                'advertising': 'Tourist',
-                'obelisk': 'Tourist',
+            # 'man_made': {
+                #'advertising': 'Tourist',
+                #'obelisk': 'Tourist',
                 # All others are Lower r.e.
-                '*': 'Lower r.e.'
-            },
+                # '*': 'Lower r.e.'
+            # },
             
             # NATURAL MAPPINGS
             'natural': {
@@ -172,11 +174,11 @@ class DataCollector:
             
             # TOURISM MAPPINGS
             'tourism': {
-                'hotel': 'Upper r.e.',
+                'hotel': 'Elite r.e.',
                 'hostel': 'Middle r.e.',
                 'motel': 'Middle r.e.',
                 # All others are Tourist
-                '*': 'Tourist'
+                # '*': 'Tourist'
             },
             
             # WATERWAY MAPPINGS
@@ -210,10 +212,11 @@ class DataCollector:
             if tags:
                 # Check for Business center (office with specific material/height)
                 if osm_value == 'office':
+                    levels = int(tags.get('levels', 0))
                     material = tags.get('building:material', '').lower()
                     height = float(tags.get('height', 0))
-                    if material in ('glass', 'mirrored-glass') or height > 20:
-                        return 'Business center'
+                    if height > 50 or levels>30:
+                        return 'Business center' # check
                 
                 # Check for Elite r.e. (hotel or levels >20, specific material/height)
                 if osm_value == 'hotel':
@@ -230,10 +233,10 @@ class DataCollector:
                     if levels >= 10 or height >= 30:
                         return 'Upper'
                 # Check for Middle class residential (medium height residential)
-                    if 5 <= levels < 10 or 15 <= height < 30:
+                    if 4 <= levels < 10 or 15 <= height < 30:
                         return 'Middle'
                 # Check for Lower class residential (small residential)
-                    if levels < 5 or height < 15:
+                    if levels < 3 or height < 10:
                         return 'Lower'
                 
                 # Check for Cottage settlement (detached houses with landuse tags)
@@ -241,13 +244,14 @@ class DataCollector:
                     landuse = tags.get('landuse', '').lower()
                     if landuse in ('residential', 'village', 'farmyard'):
                         return 'Cottage settlement'
-
         return None
 
     def info_nearby_op(self, latitude, longitude, radius, city=None):
+        # TODO: fix order of latitude longitude
         """Use Overpass API to search for POIs within circle
            https://wiki.openstreetmap.org/wiki/Overture_categories
-           @params: city - use to read cached city data"""
+           @params: city - use to read cached city data
+           @return: dataframe"""
         overpass_url = "https://overpass-api.de/api/interpreter"
 
         overpass_query = f"""
@@ -281,7 +285,7 @@ class DataCollector:
         
         if city!=None:
             try:
-                df=pd.read_csv(f'./data/{city}.csv')
+                df=pd.read_parquet(f'./data/collected/{city}_pois.zstd')
                 print("Found city cached")
                 return df
             except Exception:
@@ -339,7 +343,7 @@ class DataCollector:
 
         if city!=None:
             print("City found in POI descriptions or passed by you. Saving city data for later usage")
-            pd.DataFrame(info_nearby).to_csv(f'./data/{city}.csv', index=False)
+            pd.DataFrame(info_nearby).to_parquet(f'./data/collected/{city}_pois.zstd', index=False, compression='zstd')
         else:
             print("City not found. Next time API will be called")
         return pd.DataFrame(info_nearby)
