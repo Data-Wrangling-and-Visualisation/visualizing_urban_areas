@@ -15,8 +15,6 @@ logging.basicConfig(
     ]
 )
 
-load_dotenv()
-
 class DataCollector:
     def __init__(self):
         logging.info("Initializing DataCollector class.")
@@ -392,3 +390,14 @@ class DataCollector:
         except Exception as e:
             logging.exception(f"Error during OpenRouteService query: {e}")
             return []
+        
+
+if __name__ == "__main__":
+    load_dotenv()
+    dc=DataCollector()
+    lat=55.74802022425328
+    long=48.7462753296416
+    radius_meters=500
+    step_coor=0.02
+    info_nearby_df=dc.info_nearby_op(lat,long,radius_meters,'Иннополис')
+    print(info_nearby_df.head())
