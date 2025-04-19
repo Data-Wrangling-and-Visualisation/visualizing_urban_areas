@@ -283,6 +283,10 @@ class DataCollector:
         
         if city!=None:
             try:
+                if not os.path.exists('./data'):
+                    os.makedirs('./data')
+                if not os.path.exists('./data/collected'):
+                    os.makedirs('./data/collected')
                 df=pd.read_parquet(f'./data/collected/{city}_pois.zstd')
                 print("Found city cached")
                 return df

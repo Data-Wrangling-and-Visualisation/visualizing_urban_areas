@@ -1,9 +1,8 @@
 #!/bin/bash
+source .venv/bin/activate
 
 echo "Scraping data..."
-python3 scripts/scraping.py
-echo "Filtering unnamed entities..."
-python3 scripts/filter_unnamed.py
+python scripts/scraping.py
 echo "Indexing data to Elasticsearch..."
-python3 scripts/index_to_elasticsearch.py
+python scripts/index_to_elasticsearch.py
 echo "Data preparation complete."

@@ -4,6 +4,9 @@ FROM python:3.9-slim
 # Set the working directory inside the container
 WORKDIR /app
 
+# Create data directory and set permissions
+RUN mkdir -p /app/data && chmod 777 /app/data
+
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

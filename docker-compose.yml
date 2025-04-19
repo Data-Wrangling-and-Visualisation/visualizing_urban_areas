@@ -45,6 +45,9 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - network.host=0.0.0.0
+      - xpack.security.enabled=false
+      - discovery.type=single-node
     ports:
       - "9200:9200"
     volumes:
@@ -57,6 +60,7 @@ services:
     volumes:
       - ./scripts:/app/scripts
       - ./data:/app/data
+      - ./configs:/app/configs
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
     depends_on:

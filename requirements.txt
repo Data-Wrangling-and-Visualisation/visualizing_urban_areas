@@ -10,10 +10,12 @@ ipykernel
 geopandas
 shapely
 scikit-learn
-pandas
 fastapi
 uvicorn
 scikit-learn
 pyyaml
 alphashape
 pyarrow
+elasticsearch==8.12.1
+scipy
+geopy

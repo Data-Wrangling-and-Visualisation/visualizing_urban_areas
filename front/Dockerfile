@@ -19,6 +19,9 @@ RUN npm run build
 # Use an official Nginx image to serve the React app
 FROM nginx:alpine
 
+# Create data directory and set permissions
+RUN mkdir -p /app/data && chmod 777 /app/data
+
 # Copy the built React app from the previous stage to the Nginx web server directory
 COPY --from=0 /app/build /usr/share/nginx/html
 
