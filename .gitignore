@@ -1,7 +1,9 @@
 .venv
 scripts/__pycache__/
 secrets/ors_secret.txt
-data/*
+data/collected/*
+data/processed/*
+data/raw/*
 .env
 __pycache__/
 *log

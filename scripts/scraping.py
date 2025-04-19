@@ -34,3 +34,7 @@ if __name__ == "__main__":
     df=pd.DataFrame(all_data)
     df.to_csv('data/scraped_data.csv',index=False)
 
+info_nearby_df=dc.info_nearby_op(long,lat,radius_meters,'Paris')
+print(info_nearby_df.head())
+print(len(info_nearby_df))
+# print(dc.info_nearby_ors(lat,long,step_coor,step_coor))

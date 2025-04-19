@@ -1,6 +1,8 @@
 import pandas as pd
 
-file_path = "./data/airbnb_24.csv"
+# Airbnb csv file contains 1GB of airbnbs across the Europe and USA mainly.
+# Initial data have value type mismatches, duplicates, commas within strings (invalid csv)
+file_path = "./data/raw/airbnb_24.csv"
 df = pd.read_csv(file_path)
 
 # from csv obtained, keep only useful for clustering columns
@@ -31,14 +33,11 @@ for column_name in string_columns:
     useful_df[column_name]=useful_df[column_name].str.replace('\n',' ')
 
 # in initial data columns latitude and longitude are mixed up
-useful_df.rename({'Latitude':'Longitude','Longitude':'Latitude'})
+# useful_df.rename({'Latitude':'Longitude','Longitude':'Latitude'})
 
 #TODO: Missing values via knn?
 
 print(useful_df.dtypes)
 print('len useful df:',len(useful_df))
 # Change separator since commas appear in text columns
-useful_df.to_csv('data/airbnb_24_preprocessed.csv', sep=separator, index=False)
-
-# sanity check. Should be empty
-# awk -F'|' 'NF!=25' data/airbnb_24_preprocessed.csv
+useful_df.to_parquet('data/processed/airbnb_global.zstd', index=False, compression='zstd')
