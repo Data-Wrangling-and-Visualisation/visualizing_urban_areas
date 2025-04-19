@@ -7,6 +7,18 @@ general_parameters:
   good_enough_Calinski-Harabasz:
   good_enough_Davies-Bouldin:
 
+plotting:
+  enabled: true
+  output_dir: "./data/plots"
+  map_style: "carto-positron"  # Options: carto-positron, stamen-terrain, openstreetmap
+  point_size: 5
+  cluster_colors: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]
+  show_legend: true
+  save_plots: true
+  show_plots: false
+  plot_format: "png"  # Options: png, jpg, pdf, svg
+  dpi: 300
+
 clustering_techniques:
   Nature:
     method: kmeans

@@ -1,0 +1,5 @@
+﻿Name,Latitude,Longitude,Categories,Custom,city,city_lat,city_lon,Cluster
+Р‘СѓСЂРіРµСЂ РљРёРЅРі,55.7863997,49.1219149,amenity:fast_food,['Cafe street'],Kazan,55.7823547,49.1242266,0
+РўР°С‚Р°СЂСЃС‚Р°РЅ,55.786572,49.1222719,tourism:hotel,['Upper r.e.'],Kazan,55.7823547,49.1242266,0
+РђР»РјР°Р· СЃРёРЅРµРјР° РіСЂР°РЅРґ,55.7790116,49.1294599,amenity:cinema,['Tourist'],Kazan,55.7823547,49.1242266,0
+РЎР°Р»РёС… РЎР°Р№РґР°С€РµРІ,55.7845611,49.1174609,historic:memorial,['Tourist'],Kazan,55.7823547,49.1242266,0
