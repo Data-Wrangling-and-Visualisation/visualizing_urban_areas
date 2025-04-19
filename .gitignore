@@ -8,3 +8,4 @@ data/raw/*
 __pycache__/
 *log
 requirements.in
+data/*

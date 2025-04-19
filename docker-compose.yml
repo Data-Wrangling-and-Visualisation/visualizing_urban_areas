@@ -4,20 +4,64 @@ services:
       context: ./api
       dockerfile: Dockerfile
     ports:
-      - "8000:8000" # Map port 8000 on the host to port 8000 in the container
+      - "8000:8000"
     volumes:
       - ./api:/app # Sync the application code for development
       - ./data:/app/data # Mount the data directory as a volume
     stdin_open: true
     tty: true
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+      - data_preparation
   
   front:
     build:
       context: ./front
       dockerfile: Dockerfile
-    ports:
-      - "80:80" # Map port 3000 on the host to port 80 in the container
+    expose:
+      - "80"
     volumes:
       - ./front:/app # Optional: For development, sync local files with the container
     stdin_open: true
     tty: true
+    depends_on:
+      - api
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - front
+      - api
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
+  data_preparation:
+    build:
+      context: .
+      dockerfile: data_preparation/Dockerfile
+    volumes:
+      - ./scripts:/app/scripts
+      - ./data:/app/data
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+
+volumes:
+  elasticsearch-data:
+    driver: local

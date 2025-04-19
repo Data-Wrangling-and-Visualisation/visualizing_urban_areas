@@ -7,5 +7,5 @@ Divide the city into meaningful districts taking into account nearby restaurants
 ## Application Startup
 
 ```bash
-bash run.sh
+docker-compose up -d --build
 ```
