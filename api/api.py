@@ -36,32 +36,26 @@ def create_elasticsearch_client(max_retries=5, retry_delay=5):
     
     for attempt in range(max_retries):
         try:
+            
             es = Elasticsearch(
                 es_host,
                 request_timeout=30,
                 verify_certs=False,
                 ssl_show_warn=False,
-                headers={
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                headers= {
+                    'Accept': "application/json",
+                    'Content-Type': "application/json"
                 }
             )
-            
-            # Test the connection
-            info = es.info()
-            logger.info(f"Successfully connected to Elasticsearch. Cluster name: {info['cluster_name']}, Version: {info['version']['number']}")
+            if not es.ping():
+                logger.error("Failed to connect to Elasticsearch")
+                raise Exception("Failed to connect to Elasticsearch")
             return es
-            
-        except (NewConnectionError, MaxRetryError) as e:
-            logger.warning(f"Connection attempt {attempt + 1}/{max_retries} failed: {str(e)}")
-            if attempt < max_retries - 1:
-                logger.info(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                logger.error(f"Failed to connect to Elasticsearch after {max_retries} attempts")
-                raise
         except Exception as e:
-            logger.error(f"Unexpected error while connecting to Elasticsearch: {str(e)}")
+            logger.error(f"Failed to connect to Elasticsearch: {str(e)}")
+            import requests
+            response = requests.get(es_host)
+            logger.error(f"Elasticsearch response: {response.status_code}")
             raise
 
 # Initialize Elasticsearch client with retry logic

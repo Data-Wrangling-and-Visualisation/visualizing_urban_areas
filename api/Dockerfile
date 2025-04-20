@@ -1,5 +1,12 @@
 # Use the official Python image as the base image
-FROM python:3.9-slim
+FROM python:3.11-slim
+
+
+# install curl (and clean up apt lists)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
 
 # Set the working directory inside the container
 WORKDIR /app

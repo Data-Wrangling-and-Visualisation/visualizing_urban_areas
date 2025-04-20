@@ -9,20 +9,14 @@ services:
       - ./api:/app # Sync the application code for development
       - ./data:/app/data # Mount the data directory as a volume
     stdin_open: true
-    tty: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_URL=http://host.docker.internal:9200
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
     networks:
       - elastic
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   front:
     build:
@@ -52,7 +46,7 @@ services:
       - elastic
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+    image: elasticsearch:8.12.1
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -62,7 +56,6 @@ services:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - "discovery.seed_hosts=[]"
-      - "cluster.initial_master_nodes=[]"
       - "action.destructive_requires_name=false"
     ports:
       - "9200:9200"
@@ -70,12 +63,6 @@ services:
       - elasticsearch-data:/usr/share/elasticsearch/data
     networks:
       - elastic
-    healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health?pretty | grep -q '\"status\" : \"(green|yellow)\"'"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
     ulimits:
       memlock:
         soft: -1
