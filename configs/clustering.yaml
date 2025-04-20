@@ -20,13 +20,7 @@ plotting:
   dpi: 300
 
 clustering_techniques:
-  Nature:
-    method: kmeans
-    params:
-      n_clusters: 5
-      random_state: 42
-    
-  Business center:
+  business_center:
     method: optics
     params:
       min_samples: 5
@@ -34,7 +28,7 @@ clustering_techniques:
       max_eps: 0.4
       metric: euclidean
     
-  Cafe street:
+  cafe:
     method: hdbscan
     params:
       min_cluster_size: 10
@@ -42,13 +36,33 @@ clustering_techniques:
       cluster_selection_epsilon: 0
       metric: haversine
     
-  Downtown:
+  museum:
+    method: kmeans
+    params:
+      n_clusters: 5
+      random_state: 42
+    
+  park:
+    method: kmeans
+    params:
+      n_clusters: 4
+      random_state: 42
+    
+  restaurant:
+    method: hdbscan
+    params:
+      min_cluster_size: 8
+      min_samples: 4
+      cluster_selection_epsilon: 0
+      metric: haversine
+    
+  university:
     method: optics
     params:
       min_samples: 7
       xi: 0.1
       metric: euclidean
-    
+
   Elite r.e.:
     method: hdbscan
     params:
@@ -105,10 +119,3 @@ clustering_techniques:
     params:
       n_components: 7
       covariance_type: 'tied'
-    
-  University:
-    method: affinity
-    params:
-      damping: 0.7
-      preference: -50
-      max_iter: 200

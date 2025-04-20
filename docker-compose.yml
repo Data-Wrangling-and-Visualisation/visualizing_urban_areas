@@ -14,8 +14,7 @@ services:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
     depends_on:
       - elasticsearch
-      - data_indexing
-  
+
   front:
     build:
       context: ./front
@@ -52,35 +51,6 @@ services:
       - "9200:9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
-
-  data_scraping:
-    build:
-      context: .
-      dockerfile: data_preparation/Dockerfile
-    volumes:
-      - ./scripts:/app/scripts
-      - ./data:/app/data
-      - ./configs:/app/configs
-    environment:
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-    command: python scripts/DataCollector.py
-    depends_on:
-      - elasticsearch
-
-  data_indexing:
-    build:
-      context: .
-      dockerfile: data_preparation/Dockerfile
-    volumes:
-      - ./scripts:/app/scripts
-      - ./data:/app/data
-      - ./configs:/app/configs
-    environment:
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-    command: python scripts/index_to_elasticsearch.py
-    depends_on:
-      - elasticsearch
-      - data_scraping
 
 volumes:
   elasticsearch-data:

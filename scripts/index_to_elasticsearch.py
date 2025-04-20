@@ -149,14 +149,11 @@ def main(df):
     # Get the project root directory and load environment variables
     project_root = Path(__file__).parent.parent
     env_path = project_root / '.env'
-    
-    if not env_path.exists():
-        raise FileNotFoundError(f".env file not found at {env_path}")
-    
-    load_dotenv(dotenv_path=env_path)
+    load_dotenv()        
     
     # Elasticsearch configuration
-    es_host = os.getenv('ELASTICSEARCH_URL')
+    es_host = os.getenv('ELASTICSEARCH_URL',None)
+        
     if not es_host:
         raise ValueError(f"ELASTICSEARCH_URL environment variable is not set in {env_path}")
     

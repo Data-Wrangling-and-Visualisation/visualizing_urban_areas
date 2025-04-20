@@ -328,7 +328,12 @@ def main():
     # Process each category
     clusters_info = {}
     for category, X_cat in zip(categories, X_by_category):
+        print(f"\nProcessing category: {category}")
         technique = config['clustering_techniques'].get(category)
+        if technique is None:
+            print(f"\nSkipping category {category} - no clustering technique defined")
+            continue
+            
         print(f"\nProcessing category: {category} using {technique['method']}")
         
         # Filter points within area of interest
