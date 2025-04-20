@@ -152,7 +152,7 @@ def main(df):
     load_dotenv()        
     
     # Elasticsearch configuration
-    es_host = os.getenv('ELASTICSEARCH_URL',None)
+    es_host = os.getenv('ELASTICSEARCH_URL','http://localhost:9200')
         
     if not es_host:
         raise ValueError(f"ELASTICSEARCH_URL environment variable is not set in {env_path}")

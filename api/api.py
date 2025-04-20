@@ -5,9 +5,14 @@ from typing import List, Optional
 import os
 from dotenv import load_dotenv
 import logging
+import time
+from urllib3.exceptions import NewConnectionError, MaxRetryError
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
@@ -24,16 +29,47 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# Initialize Elasticsearch client
-es_host = os.getenv('ELASTICSEARCH_URL', 'http://elasticsearch:9200')
-es = Elasticsearch(
-    hosts=[es_host],
-    verify_certs=False,
-    ssl_show_warn=False,
-    request_timeout=30,
-    retry_on_timeout=True,
-    max_retries=3
-)
+def create_elasticsearch_client(max_retries=5, retry_delay=5):
+    """Create Elasticsearch client with retry logic."""
+    es_host = os.getenv('ELASTICSEARCH_URL', 'http://localhost:9200')
+    logger.info(f"Attempting to connect to Elasticsearch at {es_host}")
+    
+    for attempt in range(max_retries):
+        try:
+            es = Elasticsearch(
+                es_host,
+                request_timeout=30,
+                verify_certs=False,
+                ssl_show_warn=False,
+                headers={
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            )
+            
+            # Test the connection
+            info = es.info()
+            logger.info(f"Successfully connected to Elasticsearch. Cluster name: {info['cluster_name']}, Version: {info['version']['number']}")
+            return es
+            
+        except (NewConnectionError, MaxRetryError) as e:
+            logger.warning(f"Connection attempt {attempt + 1}/{max_retries} failed: {str(e)}")
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"Failed to connect to Elasticsearch after {max_retries} attempts")
+                raise
+        except Exception as e:
+            logger.error(f"Unexpected error while connecting to Elasticsearch: {str(e)}")
+            raise
+
+# Initialize Elasticsearch client with retry logic
+try:
+    es = create_elasticsearch_client()
+except Exception as e:
+    logger.error(f"Failed to initialize Elasticsearch client: {str(e)}")
+    raise HTTPException(status_code=500, detail=f"Failed to connect to Elasticsearch: {str(e)}")
 
 @app.get("/cities")
 async def get_cities():
