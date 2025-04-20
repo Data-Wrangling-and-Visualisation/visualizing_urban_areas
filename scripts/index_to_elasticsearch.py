@@ -145,7 +145,7 @@ def index_data_to_elasticsearch(es_client, index_name, df):
         logger.error(f"Error in bulk indexing: {e}")
         raise
 
-def main(df):
+def main(df,delete_index=False):
     # Get the project root directory and load environment variables
     project_root = Path(__file__).parent.parent
     env_path = project_root / '.env'
@@ -182,7 +182,8 @@ def main(df):
             raise ConnectionError(f"Could not connect to Elasticsearch: {str(e)}")
         
         # Create index with optimized mappings
-        create_elasticsearch_index(es_client, index_name)
+        if delete_index:
+            create_elasticsearch_index(es_client, index_name)
         
         # Index the data
         index_data_to_elasticsearch(es_client, index_name, df)
@@ -196,9 +197,12 @@ if __name__ == "__main__":
     config_path = project_root / 'configs' / 'scraping_config.yaml'
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
-    
+    delete_index=True
     bar = tqdm(config['cities'],desc='Indexing cities')
     for city in bar:
         df=pd.read_parquet(f'./data/collected/{city}_pois.zstd')
-        main(df)
+        df['city']=city
+        print(df.head())
+        main(df,delete_index)
         bar.set_postfix(city=city)
+        delete_index=False

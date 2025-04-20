@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers import scan
 from typing import List, Optional
 import os
 from dotenv import load_dotenv
@@ -70,36 +71,37 @@ async def get_cities():
     """Get list of all available cities with their coordinates."""
     try:
         # Use terms aggregation to get unique cities
-        query = {
-            "size": 0,
-            "aggs": {
-                "cities": {
-                    "terms": {
-                        "field": "city.keyword",
-                        "size": 100
-                    },
-                    "aggs": {
-                        "city_lat": {
-                            "avg": {"field": "city_lat"}
-                        },
-                        "city_lon": {
-                            "avg": {"field": "city_lon"}
+        max_cities=10000
+        body = {
+        "size": 0,
+        "aggs": {
+            "by_city": {
+                "terms": {
+                    "field": "city",
+                    "size": max_cities
+                },
+                "aggs": {
+                    "sample_loc": {
+                        "top_hits": {
+                            "size": 1,
+                            "_source": ["location"]
                         }
                     }
                 }
             }
+            }
         }
         
-        response = es.search(index="urban_areas", body=query)
+        response = es.search(index="urban_areas", body=body)
+        buckets = response["aggregations"]["by_city"]["buckets"]
         cities = []
-        
-        for bucket in response['aggregations']['cities']['buckets']:
+        for bucket in buckets:
             cities.append({
                 "name": bucket['key'],
-                "lat": bucket['city_lat']['value'],
-                "lon": bucket['city_lon']['value']
+                "lat": bucket['sample_loc']['hits']['hits'][0]['_source']['location']['lat'],
+                "lon": bucket['sample_loc']['hits']['hits'][0]['_source']['location']['lon']
             })
-        
+            logger.info(f"Found {len(cities)} cities")
         return {"cities": cities}
     except Exception as e:
         logger.error(f"Error fetching cities: {e}")
@@ -112,14 +114,20 @@ async def get_city_pois(city_name: str):
         query = {
             "query": {
                 "term": {
-                    "city.keyword": city_name
+                    "city": {
+                        "value": city_name
+                    }
                 }
-            },
-            "size": 1000
+            }
         }
-        
-        response = es.search(index="urban_areas", body=query)
-        pois = [hit["_source"] for hit in response["hits"]["hits"]]
+        logger.info(f"Fetching POIs for city {city_name}")
+        docs = scan(
+            client=es,
+            index="urban_areas",
+            query=query,
+            _source_includes=["name", "location", "categories", "timestamp", "metadata", "custom_tags"]
+        )
+        pois = [hit["_source"] for hit in docs]
         
         return {"pois": pois}
     except Exception as e:
