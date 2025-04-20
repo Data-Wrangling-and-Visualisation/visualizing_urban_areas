@@ -135,6 +135,7 @@ def save_clusters_to_parquet(clusters_info: Dict[str, Dict[int, npt.NDArray[np.f
         output_path: Path to save the parquet file
     """
     # Prepare flattened data
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     data = []
     for group_name, clusters in clusters_info.items():
         for cluster_num, coords in clusters.items():

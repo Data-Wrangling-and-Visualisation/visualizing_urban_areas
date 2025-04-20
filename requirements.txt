@@ -19,3 +19,5 @@ pyarrow
 elasticsearch==8.12.1
 scipy
 geopy
+contextily
+folium
