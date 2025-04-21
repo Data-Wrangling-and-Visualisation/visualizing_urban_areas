@@ -54,11 +54,6 @@ function Legend() {
   return (
     <div className="legend">
       <h2>Legend</h2>
-      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#a1d99b"}} /><span>Residential</span></div>
-      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#fc9272"}} /><span>Commercial</span></div>
-      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#9ecae1"}} /><span>Mixed</span></div>
-      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#ccc"}} /><span>Other</span></div>
-      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#ff0000"}} /><span>Custom Location</span></div>
       <div className="legend-item"><div className="color-box" style={{backgroundColor: "#ff7800"}} /><span>City Clusters</span></div>
     </div>
   );
