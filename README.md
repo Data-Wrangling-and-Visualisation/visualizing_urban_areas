@@ -1,16 +1,16 @@
 # Visualizing Urban Areas: Smart Residential Real Estate Analysis
 
 ## Project Overview
-This project aims to create an intelligent system for analyzing and visualizing urban areas to help users make informed decisions about residential real estate choices. By combining data from Airbnb listings and Google Maps API, we provide insights into different city districts based on various factors including amenities, transportation, and environmental conditions.
+The project goal is divide the city into meaningful districts taking into account nearby restaurants, business centers, residential buildings etc. Look at the intersections of these neighborhoods and show for what purposes which place in the city to choose. Also, we will include the weather conditions like air pollution. All this information will be useful for different purposes of living(travelling, working travel, future living etc). 
 
 ## Features
-- Interactive city map visualization with district classification
-- Comprehensive neighborhood analysis including:
-  - Residential real estate types
-  - Nearby amenities and facilities
-  - Environmental factors (air pollution, etc.)
+- Interactive city map visualization
+- Neighborhood analysis:
+  - Real estate class classification
+  - What is in the area of neighborhood(houses, theatr etc.)
+  - Environmental factors (for example, air pollution)
   - Transportation accessibility
-- Smart property recommendations based on user preferences
+- Recommendation for purpose of neighborhood
 - Multi-city support with dynamic data collection
 
 ## Dataset Sources
@@ -29,9 +29,9 @@ This project aims to create an intelligent system for analyzing and visualizing 
 
 ## Residential Real Estate Classification
 ### Property Types
-- **Elite Class**: Penthouses, large apartments in skyscrapers
-- **Upper Class**: Hotels, apartments in towers, proximity to sports centers and highways
-- **Middle Class**: Areas near schools, public transportation, supermarkets, outside city center
+- **Upper Class**: Penthouses, large apartments in skyscrapers
+- **Middle Class**: Hotels, apartments in towers, proximity to sports centers and highways
+- **Lower Class**: Areas near schools, public transportation, supermarkets, outside city center, parking
 
 ### Area Types
 - Downtown (skyscrapers, luxury shopping)
@@ -47,10 +47,9 @@ This project aims to create an intelligent system for analyzing and visualizing 
 
 ## Technical Architecture
 1. **Data Collection**
-   - Google Maps API integration
+   - Openrouteservice
    - Airbnb dataset processing
-   - Hadoop-based cloud storage
-
+    
 2. **Data Processing**
    - Data cleaning and preprocessing (Pandas)
    - Exploratory data analysis (IPython, Matplotlib/Seaborn)
@@ -66,30 +65,13 @@ This project aims to create an intelligent system for analyzing and visualizing 
    - User-friendly interface
    - Dynamic data updates
 
-## Project Timeline
-1. **Week 1**: Project setup, dataset gathering, cloud storage preparation
-2. **Week 2**: Residential real estate type definition and refinement
-3. **Week 3**: Data clustering and validation
-4. **Week 4**: Neighborhood data integration and verification
-5. **Week 5**: Google Maps API data collection pipeline
-6. **Week 6**: Dataset integration and pipeline testing
-7. **Week 7**: FastAPI backend development and testing
-8. **Week 8**: Deployment and documentation
-
 ## Getting Started
-
-### Prerequisites
-- Python 3.8 or higher
-- Node.js 14.x or higher
-- Docker and Docker Compose
-- Google Maps API key
-- Hadoop cluster access (or local setup)
 
 ### Installation
 
 1. **Clone the Repository**
    ```bash
-   git clone [repository-url]
+   git clone [[repository-url]](https://github.com/Data-Wrangling-and-Visualisation/visualizing_urban_areas)
    cd visualizing_urban_areas
    ```
 
@@ -99,110 +81,59 @@ This project aims to create an intelligent system for analyzing and visualizing 
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-   # Install Python dependencies
+   # Install dependencies
    pip install -r requirements.txt
    ```
 
 3. **Set Up Frontend**
    ```bash
-   cd frontend
+   cd front
    npm install
-   ```
-
-4. **Configure Environment Variables**
-   Create a `.env` file in the root directory with the following variables:
-   ```
-   GOOGLE_MAPS_API_KEY=your_api_key_here
-   AIRBNB_DATASET_PATH=path_to_airbnb_dataset
-   HADOOP_CONNECTION_STRING=your_hadoop_connection_string
    ```
 
 ### Running the Project
 
-1. **Start Backend Services**
+1. **Backend**
    ```bash
    # Start FastAPI server
    uvicorn app.main:app --reload
    ```
 
-2. **Start Frontend Development Server**
+2. **Frontend**
    ```bash
-   cd frontend
+   cd front
    npm run dev
    ```
 
-3. **Access the Application**
+3. **Application**
    - Frontend: http://localhost:3000
    - API Documentation: http://localhost:8000/docs
 
 ### Data Collection and Processing
 
-1. **Prepare Airbnb Dataset**
+1. **Airbnb Dataset**
    ```bash
-   python scripts/prepare_airbnb_data.py
+   python scripts/airbnb_preprocessing.py
    ```
 
-2. **Collect Google Maps Data**
+2. **Google Maps Data**
    ```bash
-   python scripts/collect_google_maps_data.py
+   python scripts/DataCollector.py
    ```
 
 3. **Process and Store Data**
    ```bash
-   python scripts/process_and_store_data.py
+   scripts/data_preparation.sh
    ```
 
-### Development Workflow
-
-1. **Data Analysis**
-   - Use Jupyter notebooks in the `notebooks/` directory for exploratory data analysis
-   - Run clustering algorithms to classify areas
-   - Validate results using the validation scripts
-
-2. **API Development**
-   - Add new endpoints in `app/routers/`
-   - Update data models in `app/models/`
-   - Test API endpoints using the interactive docs
-
-3. **Frontend Development**
-   - Add new components in `frontend/src/components/`
-   - Update map visualizations in `frontend/src/visualizations/`
-   - Test UI changes using the development server
-
-### Testing
-
-1. **Run Python Tests**
+4. **Get city coordinates**
    ```bash
-   pytest tests/
+   python scripts/city_coordinates.py
    ```
 
-2. **Run Frontend Tests**
+5. **To elasticsearch**
    ```bash
-   cd frontend
-   npm test
+   python scripts/index_clusters_to_elasticsearch.py
+   python scripts/index_to_elasticsearch.py
+   python scripts/scraping.py
    ```
-
-### Troubleshooting
-
-Common issues and solutions:
-1. **API Key Issues**
-   - Ensure your Google Maps API key has the necessary permissions
-   - Check if the key is properly set in the `.env` file
-
-2. **Data Processing Errors**
-   - Verify the Airbnb dataset path is correct
-   - Check Hadoop connection settings
-   - Ensure all required Python packages are installed
-
-3. **Frontend Build Issues**
-   - Clear node_modules and reinstall dependencies
-   - Check for version conflicts in package.json
-
-## Dependencies
-- Python 3.x
-- FastAPI
-- Pandas
-- D3.js
-- Google Maps API
-- Hadoop
-- Matplotlib/Seaborn
