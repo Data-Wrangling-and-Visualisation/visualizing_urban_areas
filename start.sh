@@ -44,8 +44,10 @@ docker-compose down -v
 
 # Build and start the containers
 print_status "Building and starting containers..."
-docker-compose up --build -d
 
+docker-compose build
+
+docker-compose up elasticsearch -d
 # Wait for Elasticsearch to be ready
 print_status "Waiting for Elasticsearch to be ready..."
 until curl -s http://localhost:9200 > /dev/null; do
@@ -54,6 +56,7 @@ until curl -s http://localhost:9200 > /dev/null; do
 done
 print_status "Elasticsearch is ready!"
 
+docker-compose up api -d
 # Wait for API to be ready
 print_status "Waiting for API to be ready..."
 until curl -s http://localhost:8000/health > /dev/null; do
@@ -61,6 +64,27 @@ until curl -s http://localhost:8000/health > /dev/null; do
     sleep 5
 done
 print_status "API is ready!"
+
+# Using venv
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Run scraping script
+print_status "Running scraping script..."
+python3 scripts/scraping.py
+if [ $? -ne 0 ]; then
+    print_error "Scraping script failed!"
+    exit 1
+fi
+
+# Run indexing script
+print_status "Running indexing script..."
+python3 scripts/index_to_elasticsearch.py
+if [ $? -ne 0 ]; then
+    print_error "Indexing script failed!"
+    exit 1
+fi
 
 # Run the clustering script
 print_status "Running clustering script..."
@@ -77,6 +101,14 @@ if [ $? -ne 0 ]; then
     print_error "Indexing script failed!"
     exit 1
 fi
+
+docker-compose up nginx -d
+# Wait for Front to be ready
+print_status "Waiting for Front to be ready..."
+until curl -s http://localhost:80 > /dev/null; do
+    print_warning "Front is not ready yet. Waiting..."
+    sleep 5
+done
 
 print_status "Application setup complete!"
 print_status "You can now access:"
