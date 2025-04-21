@@ -67,73 +67,15 @@ The project goal is divide the city into meaningful districts taking into accoun
 
 ## Getting Started
 
-### Installation
-
 1. **Clone the Repository**
    ```bash
    git clone [[repository-url]](https://github.com/Data-Wrangling-and-Visualisation/visualizing_urban_areas)
    cd visualizing_urban_areas
    ```
 
-2. **Set Up Python Environment**
+2. **Setup .env and scripts/.env with .env.example**
+
+3. **Just run start.sh**
    ```bash
-   # Create and activate virtual environment
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-   # Install dependencies
-   pip install -r requirements.txt
-   ```
-
-3. **Set Up Frontend**
-   ```bash
-   cd front
-   npm install
-   ```
-
-### Running the Project
-
-1. **Backend**
-   ```bash
-   # Start FastAPI server
-   uvicorn app.main:app --reload
-   ```
-
-2. **Frontend**
-   ```bash
-   cd front
-   npm run dev
-   ```
-
-3. **Application**
-   - Frontend: http://localhost:3000
-   - API Documentation: http://localhost:8000/docs
-
-### Data Collection and Processing
-
-1. **Airbnb Dataset**
-   ```bash
-   python scripts/airbnb_preprocessing.py
-   ```
-
-2. **Google Maps Data**
-   ```bash
-   python scripts/DataCollector.py
-   ```
-
-3. **Process and Store Data**
-   ```bash
-   scripts/data_preparation.sh
-   ```
-
-4. **Get city coordinates**
-   ```bash
-   python scripts/city_coordinates.py
-   ```
-
-5. **To elasticsearch**
-   ```bash
-   python scripts/index_clusters_to_elasticsearch.py
-   python scripts/index_to_elasticsearch.py
-   python scripts/scraping.py
+   bash start.sh
    ```
