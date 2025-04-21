@@ -34,18 +34,6 @@ const customLocationIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Sample data
-const citiesData = [
-  {
-    name: "Innopolis",
-    center: [55.7461773, 48.7506767],
-    geojson: {
-      type: "FeatureCollection",
-      features: [] // No predefined polygons for "Innopolis"
-    }
-  }
-];
-
 // FlyToCity: Smooth animation when center changes
 function FlyToCity({ center }) {
   const map = useMap();
@@ -57,11 +45,7 @@ function FlyToCity({ center }) {
 
 // MapClickHandler: Handle map clicks for custom location
 function MapClickHandler({ onLocationSelect }) {
-  useMapEvents({
-    click: (e) => {
-      onLocationSelect(e.latlng);
-    }
-  });
+  useMapEvents({ click: (e) => onLocationSelect(e.latlng) });
   return null;
 }
 
@@ -70,221 +54,162 @@ function Legend() {
   return (
     <div className="legend">
       <h2>Legend</h2>
-      <div className="legend-item">
-        <div className="color-box" style={{ backgroundColor: "#a1d99b" }} />
-        <span>Residential</span>
-      </div>
-      <div className="legend-item">
-        <div className="color-box" style={{ backgroundColor: "#fc9272" }} />
-        <span>Commercial</span>
-      </div>
-      <div className="legend-item">
-        <div className="color-box" style={{ backgroundColor: "#9ecae1" }} />
-        <span>Mixed</span>
-      </div>
-      <div className="legend-item">
-        <div className="color-box" style={{ backgroundColor: "#ccc" }} />
-        <span>Other</span>
-      </div>
-      <div className="legend-item">
-        <div className="color-box" style={{ backgroundColor: "#ff0000" }} />
-        <span>Custom Location</span>
-      </div>
+      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#a1d99b"}} /><span>Residential</span></div>
+      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#fc9272"}} /><span>Commercial</span></div>
+      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#9ecae1"}} /><span>Mixed</span></div>
+      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#ccc"}} /><span>Other</span></div>
+      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#ff0000"}} /><span>Custom Location</span></div>
+      <div className="legend-item"><div className="color-box" style={{backgroundColor: "#ff7800"}} /><span>City Clusters</span></div>
     </div>
   );
 }
 
-// Main App
 export default function App() {
   const [cities, setCities] = useState([]);
   const [selectedCity, setSelectedCity] = useState(null);
   const [points, setPoints] = useState([]);
+  const [clusters, setClusters] = useState([]);
   const [customLocation, setCustomLocation] = useState(null);
-  const [viewMode, setViewMode] = useState('city'); // 'city' or 'custom'
+  const [viewMode, setViewMode] = useState('city');
+  const [showPOIs, setShowPOIs] = useState(true);
+  const [showClusters, setShowClusters] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  // Fetch cities from the API
-  useEffect(() => {
-    async function fetchCities() {
-      try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost';
-        const response = await fetch(`${apiUrl}/api/cities`);
-        const data = await response.json();
-        if (data.cities) {
-          setCities(data.cities);
-          if (data.cities.length > 0) {
-            setSelectedCity(data.cities[0]);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching cities:", error);
-      }
-    }
-    fetchCities();
-  }, []);
+  // Base API path routed by nginx
+  const API_BASE = process.env.REACT_APP_API_URL || '/api';
 
-  // Fetch points based on selected city or custom location
+  // Load available cities
   useEffect(() => {
-    async function fetchPoints() {
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/cities`);
+        const data = await res.json();
+        if (data.cities) setCities(data.cities);
+        setSelectedCity(data.cities?.[0] || null);
+      } catch (err) {
+        console.error("Error fetching cities:", err);
+      }
+    })();
+  }, [API_BASE]);
+
+  // Fetch POIs for city or custom location
+  useEffect(() => {
+    (async () => {
       if (!selectedCity && !customLocation) return;
-      
       setLoading(true);
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost';
         let url;
         if (viewMode === 'city' && selectedCity) {
-          url = `${apiUrl}/api/city/${selectedCity.name}/pois`;
+          url = `${API_BASE}/city/${encodeURIComponent(selectedCity.name)}/pois`;
         } else if (viewMode === 'custom' && customLocation) {
-          url = `${apiUrl}/api/nearby?lat=${customLocation.lat}&lon=${customLocation.lng}&distance=1km`;
+          url = `${API_BASE}/nearby?lat=${customLocation.lat}&lon=${customLocation.lng}&distance=1km`;
         }
-
-        if (url) {
-          const response = await fetch(url);
-          const data = await response.json();
-          if (data.pois) {
-            setPoints(data.pois);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching points:", error);
+        const res = await fetch(url);
+        const data = await res.json();
+        setPoints(data.pois || []);
+      } catch (err) {
+        console.error("Error fetching POIs:", err);
       } finally {
         setLoading(false);
       }
-    }
-    fetchPoints();
-  }, [selectedCity, customLocation, viewMode]);
+    })();
+  }, [API_BASE, selectedCity, customLocation, viewMode]);
+
+  // Fetch clusters for selected city
+  useEffect(() => {
+    (async () => {
+      if (viewMode !== 'city' || !selectedCity) return;
+      try {
+        const res = await fetch(`${API_BASE}/clusters?city=${encodeURIComponent(selectedCity.name)}`);
+        const data = await res.json();
+        setClusters(data.clusters || []);
+      } catch (err) {
+        console.error("Error fetching clusters:", err);
+      }
+    })();
+  }, [API_BASE, selectedCity, viewMode]);
 
   const handleLocationSelect = (latlng) => {
     setCustomLocation(latlng);
     setViewMode('custom');
   };
 
-  // Style polygons
-  const styleDistricts = (feature) => {
-    const districtType = feature.properties.type;
-    let fillColor = "#ccc";
-    if (districtType === "residential") fillColor = "#a1d99b";
-    if (districtType === "commercial") fillColor = "#fc9272";
-    if (districtType === "mixed") fillColor = "#9ecae1";
-
-    return {
-      fillColor,
-      color: "#333",
-      weight: 1,
-      fillOpacity: 0.6
-    };
-  };
+  const styleClusters = () => ({ color: '#ff7800', weight: 2, fillOpacity: 0.2 });
 
   return (
     <div className="app-container">
-      {/* LEFT PANEL */}
       <div className="left-panel">
         <h1>Interactive cities map</h1>
-
         <div className="view-mode-selector">
-          <label>
-            <input
-              type="radio"
-              name="viewMode"
-              value="city"
-              checked={viewMode === 'city'}
-              onChange={() => setViewMode('city')}
-            />
-            City View
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="viewMode"
-              value="custom"
-              checked={viewMode === 'custom'}
-              onChange={() => setViewMode('custom')}
-            />
-            Custom Location
-          </label>
+          <label><input type="radio" value="city" checked={viewMode === 'city'} onChange={() => setViewMode('city')} /> City View</label>
+          <label><input type="radio" value="custom" checked={viewMode === 'custom'} onChange={() => setViewMode('custom')} /> Custom Location</label>
         </div>
-
         {viewMode === 'city' && (
-          <div className="city-selector">
-            <label htmlFor="city-select">City:</label>
-            <select
-              id="city-select"
-              value={selectedCity?.name || ''}
-              onChange={(e) => {
-                const city = cities.find((c) => c.name === e.target.value);
-                setSelectedCity(city);
-              }}
-            >
-              {cities.map((city) => (
-                <option key={city.name} value={city.name}>
-                  {city.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={selectedCity?.name || ''}
+            onChange={(e) => setSelectedCity(cities.find((c) => c.name === e.target.value))}
+          >
+            {cities.map((c) => (
+              <option key={c.name} value={c.name}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         )}
-
         {viewMode === 'custom' && customLocation && (
           <div className="custom-location-info">
-            <h3>Custom Location</h3>
-            <p>Latitude: {customLocation.lat.toFixed(6)}</p>
-            <p>Longitude: {customLocation.lng.toFixed(6)}</p>
+            <p>Lat: {customLocation.lat.toFixed(6)}</p>
+            <p>Lon: {customLocation.lng.toFixed(6)}</p>
           </div>
         )}
-
+        {/* Layer toggles */}
+        <div className="layer-toggles">
+          <label><input type="checkbox" checked={showClusters} onChange={() => setShowClusters(!showClusters)} /> Show Clusters</label>
+          <label><input type="checkbox" checked={showPOIs} onChange={() => setShowPOIs(!showPOIs)} /> Show POIs</label>
+        </div>
         <Legend />
       </div>
-
-      {/* RIGHT PANEL: MAP */}
       <div className="map-panel">
         <MapContainer
-          center={viewMode === 'city' && selectedCity ? [selectedCity.lat, selectedCity.lon] : [55.7461773, 48.7506767]}
+          center={
+            viewMode === 'city' && selectedCity
+              ? [selectedCity.lat, selectedCity.lon]
+              : [55.7461773, 48.7506767]
+          }
           zoom={13}
           className="leaflet-container"
         >
-          {viewMode === 'city' && selectedCity && (
-            <FlyToCity center={[selectedCity.lat, selectedCity.lon]} />
-          )}
-          {viewMode === 'custom' && customLocation && (
-            <FlyToCity center={[customLocation.lat, customLocation.lng]} />
-          )}
-
+          {viewMode === 'city' && selectedCity && <FlyToCity center={[selectedCity.lat, selectedCity.lon]} />}
+          {viewMode === 'custom' && customLocation && <FlyToCity center={[customLocation.lat, customLocation.lng]} />}
           <MapClickHandler onLocationSelect={handleLocationSelect} />
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap contributors" />
 
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-          />
+          {/* Render clusters */}
+          {showClusters && clusters.map((hit, idx) => {
+            const shape = hit._source?.shape;
+            if (!shape || !shape.type || !shape.coordinates) return null;
+            const geojson = {
+              ...shape,
+              type: shape.type.charAt(0).toUpperCase() + shape.type.slice(1)
+            };
+            return <GeoJSON key={idx} data={geojson} style={styleClusters()} />;
+          })}
 
-          {/* Render markers for POIs */}
-          {points.map((point, index) => (
-            <Marker
-              key={index}
-              position={[point.location.lat, point.location.lon]}
-            >
+          {/* Render POIs */}
+          {showPOIs && points.map((pt, i) => (
+            <Marker key={i} position={[pt.location.lat, pt.location.lon]}>
               <Popup>
-                <strong>{point.Name || "Unnamed"}</strong>
-                <br />
-                {point.city && `City: ${point.city}`}
-                <br />
-                {point.Categories && `Categories: ${point.Categories}`}
-                <br />
-                {point.Custom && `Custom: ${Array.isArray(point.Custom) ? point.Custom.join(", ") : point.Custom}`}
+                <strong>{pt.name || 'Unnamed'}</strong><br />
+                {pt.city && `City: ${pt.city}`}<br />
+                {pt.categories && `Categories: ${pt.categories}`}<br />
+                {pt.custom_tags && `Tags: ${Array.isArray(pt.custom_tags) ? pt.custom_tags.join(', ') : pt.custom_tags}`}
               </Popup>
             </Marker>
           ))}
 
-          {/* Render custom location marker */}
           {customLocation && (
-            <Marker
-              position={[customLocation.lat, customLocation.lng]}
-              icon={customLocationIcon}
-            >
-              <Popup>
-                <strong>Custom Location</strong>
-                <br />
-                Click elsewhere to change
-              </Popup>
+            <Marker position={[customLocation.lat, customLocation.lng]} icon={customLocationIcon}>
+              <Popup>Custom Location<br />Click elsewhere to change</Popup>
             </Marker>
           )}
         </MapContainer>
