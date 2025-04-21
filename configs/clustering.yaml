@@ -20,7 +20,7 @@ plotting:
   dpi: 300
 
 clustering_techniques:
-  business_center:
+  "Business center":
     method: optics
     params:
       min_samples: 5
@@ -28,7 +28,7 @@ clustering_techniques:
       max_eps: 0.4
       metric: euclidean
     
-  cafe:
+  "Cafe street":
     method: hdbscan
     params:
       min_cluster_size: 10
@@ -36,19 +36,19 @@ clustering_techniques:
       cluster_selection_epsilon: 0
       metric: haversine
     
-  museum:
+  Museum:
     method: kmeans
     params:
       n_clusters: 5
       random_state: 42
     
-  park:
+  Park:
     method: kmeans
     params:
       n_clusters: 4
       random_state: 42
     
-  restaurant:
+  Restaurant:
     method: hdbscan
     params:
       min_cluster_size: 8
@@ -56,14 +56,14 @@ clustering_techniques:
       cluster_selection_epsilon: 0
       metric: haversine
     
-  university:
+  University:
     method: optics
     params:
       min_samples: 7
       xi: 0.1
       metric: euclidean
 
-  Elite r.e.:
+  "Elite r.e.":
     method: hdbscan
     params:
       min_cluster_size: 8
@@ -71,7 +71,7 @@ clustering_techniques:
       cluster_selection_epsilon: 0.1
       metric: haversine
     
-  Upper r.e.:
+  "Upper r.e.":
     method: hdbscan
     params:
       min_cluster_size: 12
@@ -79,7 +79,7 @@ clustering_techniques:
       cluster_selection_epsilon: 0
       metric: haversine
     
-  Middle r.e.:
+  "Middle r.e.":
     method: hdbscan
     params:
       min_cluster_size: 15
@@ -87,7 +87,7 @@ clustering_techniques:
       cluster_selection_epsilon: 0.05
       metric: haversine
     
-  Lower r.e.:
+  "Lower r.e.":
     method: hdbscan
     params:
       min_cluster_size: 20

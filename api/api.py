@@ -195,3 +195,21 @@ async def health_check():
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
         return {"status": "unhealthy", "error": str(e)}
+
+
+@app.get("/clusters")
+async def get_clusters(city: str):
+    """Get all clusters."""
+    try:
+        query = {
+            "query": {
+                "term": {
+                    "city": city
+                }
+            }
+        }
+        response = es.search(index="urban_clusters", body=query)
+        return {"clusters": response["hits"]["hits"]}
+    except Exception as e:
+        logger.error(f"Error fetching clusters: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

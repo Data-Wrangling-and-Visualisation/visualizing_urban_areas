@@ -124,6 +124,10 @@ def index_clusters_to_elasticsearch(es_client, index_name, clusters_path, city):
     try:
         # Read clusters from parquet
         table = pq.read_table(clusters_path)
+        print(table.schema)
+        print(table.num_rows)
+        print(table.num_columns)
+        print(table.to_pandas().head())
         
         # Process in batches
         batch_size = 100
@@ -135,9 +139,10 @@ def index_clusters_to_elasticsearch(es_client, index_name, clusters_path, city):
         
         for group in tqdm(groups, desc=f"Indexing clusters for {city}"):
             # Filter table for current group
+            print(group)
             expr = pc.field("group") == group
             group_table = table.filter(expr)
-            
+            print(group_table.num_rows)
             # Process each cluster in the group
             for i in range(len(group_table)):
                 try:
